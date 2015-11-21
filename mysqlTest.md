@@ -59,6 +59,7 @@ nodejs中promise主要依赖于q插件，所以在使用promise之前安装q模�
 </code>
 用<code>Q.defer</code>可以手动创建<code>promise</code>。比如将<code>fs.readFile</code>手工封装成<code>promise</code>的（基本上就是 <code>Q.denodify</code>做的事情 ）
 
+创建原始的promise
 <code>
 	
 	function fs_readFile (file, encoding) {
@@ -70,4 +71,28 @@ nodejs中promise主要依赖于q插件，所以在使用promise之前安装q模�
 	  return deferred.promise // the promise is returned
 	}
 	fs_readFile('myfile.txt').then(console.log, console.error)
+</code>
+
+做同时支持callbacks 和 promises 的APIs
+
+我们已经见过两种将callback代码变成promise代码的办法了。其实还能做出同时提供promise和callback接口的APIs。下面我们就把fs.readFile变成这样的API：
+
+<code>	
+
+	function fs_readFile (file, encoding, callback) {
+	  var deferred = Q.defer()
+	  fs.readFile(function (err, data) {
+	    if (err) deferred.reject(err) // rejects the promise with `er` as the reason
+	    else deferred.resolve(data) // fulfills the promise with `data` as the value
+	  })
+	  return deferred.promise.nodeify(callback) // the promise is returned
+	}
+</code>
+
+如果提供了callback，当promise被拒或被解决时，会用标准Node风格的(err, result) 参数调用它。
+<code>
+	
+	fs_readFile('myfile.txt', 'utf8', function (er, data) {
+	  // ...
+	})
 </code>
