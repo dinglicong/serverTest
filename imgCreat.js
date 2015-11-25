@@ -47,16 +47,27 @@ var fs = require("fs"),
 	function writeImage(data){
 		if(index<imgCount){
 			console.log(index);
-			request.head(data[index],function(err,res,body){
-				
-				request(data[index]).pipe(fs.createWriteStream(dir + "/" + index + ".jpg"))
-				index++;
-				writeImage(data);
-			});
-			
+			//判断图片是否已经下载
+			fs.exists(dir + "/" + index + ".jpg",function(exists){
+				if(exists){
+					//存在，跳过
+					index++;
+					writeImage(data);
+					
+				}else{
+					//不存在，下载
+					request.head(data[index],function(err,res,body){
+						//通过request请求传输给文件流生成文件
+						request(data[index]).pipe(fs.createWriteStream(dir + "/" + index + ".jpg"));
+						index++;
+						writeImage(data);
+					});
+				}
+			})
 		} 
 	}
 	
+	//promise使用。。。。。。。、。。。。。。。。。。。。、、
 	readImageUrl("imgList.txt").then(writeImage);
 	
 	
